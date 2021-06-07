@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.sound.sampled.AudioInputStream;
@@ -28,12 +29,14 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
     // UI 세팅용 변수
     JPanel pnlNorth, pnlNorthSub, pnlCenter;
     JLabel lbl;
-    JButton startBtn;
+    JButton startBtn, resetBtn;
     BingoGameJProgressBar bar;
     JButton[] btns = new JButton[16];// 버튼 16개
     String[] imgNames = {"1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png",
             "1.png", "2.png", "3.png", "4.png", "5.png", "6.png", "7.png", "8.png"};
     List<String> imgList = Arrays.asList(imgNames);// 이미지 파일 컬렉션화
+
+    boolean isReset;// 재시작 여부 변수
 
     // 카드 맞추기용 변수 (전부 기본값 0 들어있음)
     int tryCnt;// 시도 횟수
@@ -66,8 +69,12 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
         pnlNorthSub = new JPanel();
         startBtn = new JButton("시작");
         startBtn.addActionListener(this);
+        resetBtn = new JButton("재시작");
+        resetBtn.setEnabled(false);// 처음에는 클릭할 수 없게 설정
+        resetBtn.addActionListener(this);
         bar = new BingoGameJProgressBar(this);
         pnlNorthSub.add(startBtn);
+        pnlNorthSub.add(resetBtn);
         pnlNorthSub.add(bar);
 
         pnlNorth.add(lbl);
@@ -135,13 +142,22 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource()==startBtn) {// 시작 버튼 눌렀을 때
+        if (e.getSource() == startBtn) {// 시작 버튼 눌렀을 때
             playSound("timer.wav");
+
+            isReset = false;
+            resetBtn.setEnabled(true);
             // 타이머 라벨 스레드 실행
             (new Thread(bar)).start();
 
+        } else if (e.getSource() == resetBtn) {// 재시작 버튼 눌렀을 때
+
+            isReset = true;
+            (new Thread(this)).start();
+
         } else {// 카드(그림있는 버튼)를 눌렀을 때
             playSound("flip.wav");
+
             if (openCnt == 2) {// 카드를 2개 이상 뒤집지 못하게 막기
                 return;
             }
@@ -168,6 +184,7 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
 
                 if (isSame) {// true일 때
                     playSound("success.wav");
+
                     openCnt = 0;// 뒤집은 횟수 초기화
                     successCnt++;// 성공한 횟수 증가
 
@@ -177,7 +194,8 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
 
                 } else {// false일 때
                     playSound("fail.wav");
-                    new Thread(this).start();// 물음표 버튼으로 다시 뒤집기
+
+                    (new Thread(this)).start();// 물음표 버튼으로 다시 뒤집기
                 }
             }
         }
@@ -185,6 +203,16 @@ public class BingoGame extends JFrame implements ActionListener, Runnable {
 
     @Override
     public void run() {
+        if (isReset) {// 재시작을 누르면 카드 모두 뒤집기
+            openCnt = 0;// 뒤집은 카드 횟수 초기화
+            tryCnt = 0;// 시도 횟수 초기화
+            lbl.setText("같은 카드를 찾으세요! 시도한 횟수 : " + tryCnt);
+
+            for (int i = 0; i < btns.length; i++) {
+                btns[i].setIcon(changeImage("q.png"));
+            }
+        }
+
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
