@@ -58,11 +58,25 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
     int card2;// 두번째 뒤집은 카드의 인덱스 : 0 ~ 15
     int comboCnt;// 카드 맞춘 횟수 (맞추면 최대 8, 틀리면 무조건 0)
 
+    // 효과음
+    Audio bgm = new Audio("wav/bgm.wav", true);
+    Audio flip = new Audio("wav/flip.wav", false);
+    Audio success = new Audio("wav/success.wav", false);
+    Audio fail = new Audio("wav/fail.wav", false);
+    Audio timer = new Audio("wav/timer.wav", true);
+    Audio ready = new Audio("wav/ready.wav", false);
+    Audio item = new Audio("wav/item.wav", false);
+    Audio gameComplete = new Audio("wav/gameComplete.wav", false);
+    Audio gameover = new Audio("wav/gameover.wav", false);
+
     public BingGoGame() {
         setDefaultCloseOperation(3);
         setSize(500, 540);
         setTitle("카드 맞추기 게임");
         setLocation(700, 300);
+
+        // 효과음
+        bgm.start();
 
         ImageIcon iconBack = new ImageIcon("img/back.jpg");
         JPanel pnl = new JPanel();
@@ -198,6 +212,7 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
         setVisible(true);
     }
 
+    // 카드 이미지 리스트 섞는 메서드
     void shuffle() {
         imgList = Arrays.asList(imgNames);
         Collections.shuffle(imgList);
@@ -209,6 +224,7 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
         }
     }
 
+    // 랭킹 등록하는 메서드
     void saveFile() {
         File f = new File("rank.txt");
         FileWriter fw = null;
@@ -234,6 +250,9 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
     public void run() {
         // 시작하면 잠깐 카드 보여주고 다시 가리는 스레드
         if (isStart) {
+            // 효과음
+            ready.start();
+
             for (int i = 0; i < 16; i++) {
                 btns[i].setIcon(changeIcons[i]);
             }
@@ -255,19 +274,23 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
         int x = 0;
         int speed2 = 1500;
         if (isbar) {
+            // 효과음
+            timer.start();
 
             for (int i = 100; i >= 0; i--) {
                 if (isStop == false) {
                     try {
                         // 얼음
                         if (isIce == true) {
-                            //minus = 0;
+                            item.start();
+
+                            // minus = 0;
                             btnReplay.setEnabled(false);
                             bar.setForeground(Color.BLUE);
                             Thread.sleep(3000);
                             isIce = false;
                         } else if (isIce == false) {
-                            //minus = 0;
+                            // minus = 0;
                             btnReplay.setEnabled(true);
                             bar.setForeground(Color.lightGray);
                             Thread.sleep(speed);
@@ -276,7 +299,9 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
 
                         // 거북이
                         if (isTurtle) {
-                            //minus = 0;
+                            item.start();
+
+                            // minus = 0;
                             while (true) {
                                 btnReplay.setEnabled(false);
                                 bar.setForeground(Color.GREEN);
@@ -302,7 +327,10 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
 
                     bar.setValue(i - minus);
 
-                    if (bar.getValue()<=0) {
+                    if (bar.getValue() <= 0) {
+                        timer.stop();
+                        gameover.start();
+
                         JOptionPane.showMessageDialog(this, "GAME OVER!");
                         for (int j = 0; j < 16; j++) {
                             btns[j].setEnabled(false);
@@ -380,6 +408,8 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
     public void actionPerformed(ActionEvent e) {
         int userChoose = 0;
         if (e.getSource() == btnPlay) {// play 버튼
+
+
             btnPlay.setEnabled(false);
 
             // 버튼 활성화
@@ -444,6 +474,8 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
             rd = new RankDialog(this, "Ranking");
 
         } else {// 그림 카드 버튼
+            // 효과음
+            flip.start();
 
             if (openCnt == 2) {// 카드를 2개 이상 뒤집지 못하게 막기
                 return;
@@ -469,10 +501,12 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
                 boolean isSame = checkCard(card1, card2);
 
                 if (isSame) {// true일 때
+                    // 효과음
+                    success.start();
+
                     openCnt = 0;// 뒤집은 횟수 초기화
                     successCnt++;// 성공한 횟수 증가
                     comboCnt++;// 콤보카운트 증가
-                    System.out.println("combo?" + comboCnt);
 
                     if (comboCnt > 2) {
                         item1.setEnabled(true);
@@ -484,6 +518,10 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
                     btns[card2].setEnabled(false);
 
                     if (successCnt == 8) {// 16장의 카드를 모두 맞췄을 때
+                        // 효과음
+                        timer.stop();
+                        gameComplete.start();
+
                         isStop = true;
                         item1.setEnabled(false);
                         item2.setEnabled(false);
@@ -501,12 +539,14 @@ public class BingGoGame extends JFrame implements ActionListener, Runnable {
                     }
 
                 } else {// false일 때
+                    // 효과음
+                    fail.start();
+
                     isbar = false;
                     isCard = true;
                     minus += 5;
                     bar.setForeground(Color.RED);
                     comboCnt = 0;// 콤보카운트 초기화
-                    System.out.println("combo?" + comboCnt);
                     (new Thread(this)).start();// 물음표 버튼으로 다시 뒤집기
                 }
             }
